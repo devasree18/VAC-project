@@ -35,15 +35,15 @@ function analyzeNetwork() {
 
             // Show sections
             document.getElementById('statsSection').classList.remove('hidden');
-            document.getElementById('graphSection').classList.remove('hidden');
+            document.getElementById('tableSection').classList.remove('hidden');
 
             // Update Stats
             animateValue("totalPackets", 0, data.total_packets, 1000);
             animateValue("normalCount", 0, data.normal_count, 1000);
             animateValue("attackCount", 0, data.attack_count, 1000);
 
-            // Render Graph
-            renderThreatsGraph(data.trends);
+            // Render Table
+            renderAttackTable(data.detected_incidents);
         })
         .catch(err => {
             statusMsg.innerHTML = `<span class="text-red">Server Error. Check console.</span>`;
@@ -51,57 +51,26 @@ function analyzeNetwork() {
         });
 }
 
-function renderThreatsGraph(trendsData) {
-    const ctx = document.getElementById('threatsGraph').getContext('2d');
+function renderAttackTable(attacks) {
+    const tableBody = document.querySelector('#attacksTable tbody');
+    tableBody.innerHTML = '';
 
-    if (window.myChart) window.myChart.destroy();
+    if (attacks.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888;">No attacks detected.</td></tr>';
+        return;
+    }
 
-    // Create Gradient
-    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(255, 0, 85, 0.5)'); // Red/Pink
-    gradient.addColorStop(1, 'rgba(255, 0, 85, 0.0)');
-
-    window.myChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: trendsData.labels,
-            datasets: [{
-                label: 'Threats Detected',
-                data: trendsData.attack,
-                borderColor: '#ff0055',
-                backgroundColor: gradient,
-                borderWidth: 2,
-                pointBackgroundColor: '#fff',
-                pointBorderColor: '#ff0055',
-                fill: true,
-                tension: 0.4 // Smooth curve
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    labels: { color: '#e0e0e0', font: { family: 'Courier New' } }
-                }
-            },
-            scales: {
-                x: {
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                    ticks: { color: '#888' },
-                    title: { display: true, text: 'Time / Packet Segments', color: '#555' }
-                },
-                y: {
-                    grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                    ticks: { color: '#888' },
-                    beginAtZero: true
-                }
-            },
-            animation: {
-                duration: 2000,
-                easing: 'easeOutQuart'
-            }
-        }
+    attacks.forEach(attack => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>#${attack.id}</td>
+            <td class="text-blue">${attack.protocol_type}</td>
+            <td>${attack.service}</td>
+            <td>${attack.src_bytes} / ${attack.dst_bytes}</td>
+            <td class="risk-high">${attack.flag}</td>
+            <td class="risk-high">INTERRUPTED</td>
+        `;
+        tableBody.appendChild(row);
     });
 }
 

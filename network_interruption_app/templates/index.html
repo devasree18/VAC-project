@@ -45,10 +45,24 @@
             </div>
         </section>
 
-        <!-- Graph Section -->
-        <section class="graph-container hidden" id="graphSection">
-            <h2>Threats Over Time</h2>
-            <canvas id="threatsGraph"></canvas>
+        <!-- Attack Log Section -->
+        <section class="table-container hidden" id="tableSection">
+            <h2>Detailed Attack Log</h2>
+            <table id="attacksTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Protocol</th>
+                        <th>Service</th>
+                        <th>Bytes (Src/Dst)</th>
+                        <th>Flag</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Populated by JS -->
+                </tbody>
+            </table>
         </section>
 
         <p id="statusMsg" style="text-align: center; margin-top: 2rem; color: #888;"></p>
