@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Interruption Detection System</title>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="background-grid"></div>
+
+    <div class="container">
+        <header>
+            <h1>Network Interruption Detection Website</h1>
+            <p style="color: #666; margin-top: 10px;">Monitor Traffic Anomalies & Attacks</p>
+        </header>
+
+        <section class="upload-section">
+            <label class="custom-file-upload">
+                <input type="file" id="fileInput" accept=".csv">
+                <span><i class="fas fa-upload"></i> Upload NSL-KDD CSV</span>
+            </label>
+            <button id="analyzeBtn" class="analyze-btn">Analyze Network (Auto-Load)</button>
+            <a href="/download_sample" class="sample-link">Download Sample CSV</a>
+        </section>
+
+        <!-- Stats Section -->
+        <section class="stats-container hidden" id="statsSection">
+            <div class="card">
+                <h3>Total Traffic</h3>
+                <p id="totalPackets" class="text-blue">0</p>
+            </div>
+            <div class="card">
+                <h3>Normal Traffic</h3>
+                <p id="normalCount" class="text-green">0</p>
+            </div>
+            <div class="card">
+                <h3>Attack Traffic</h3>
+                <p id="attackCount" class="text-red">0</p>
+            </div>
+        </section>
+
+        <!-- Graph Section -->
+        <section class="graph-container hidden" id="graphSection">
+            <h2>Threats Over Time</h2>
+            <canvas id="threatsGraph"></canvas>
+        </section>
+
+        <p id="statusMsg" style="text-align: center; margin-top: 2rem; color: #888;"></p>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>
