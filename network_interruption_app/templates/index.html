@@ -4,71 +4,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Network Interruption Detection System</title>
+    <title>NIDS | Network Interruption Detection System</title>
+
+    <!-- Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=3.0">
 </head>
 
 <body>
-    <div class="background-grid"></div>
 
-    <div class="container">
-        <header>
-            <h1>Network Interruption Detection Website</h1>
-            <p style="color: #666; margin-top: 10px;">Monitor Traffic Anomalies & Attacks</p>
-        </header>
-
-        <section class="upload-section">
-            <label class="custom-file-upload">
-                <input type="file" id="fileInput" accept=".csv">
-                <span><i class="fas fa-upload"></i> Upload NSL-KDD CSV</span>
-            </label>
-            <button id="analyzeBtn" class="analyze-btn">Analyze Network (Auto-Load)</button>
-            <a href="/download_sample" class="sample-link">Download Sample CSV</a>
-        </section>
-
-        <!-- Stats Section -->
-        <section class="stats-container hidden" id="statsSection">
-            <div class="card">
-                <h3>Total Traffic</h3>
-                <p id="totalPackets" class="text-blue">0</p>
-            </div>
-            <div class="card">
-                <h3>Normal Traffic</h3>
-                <p id="normalCount" class="text-green">0</p>
-            </div>
-            <div class="card">
-                <h3>Attack Traffic</h3>
-                <p id="attackCount" class="text-red">0</p>
-            </div>
-        </section>
-
-        <!-- Attack Log Section -->
-        <section class="table-container hidden" id="tableSection">
-            <h2>Detailed Attack Log</h2>
-            <table id="attacksTable">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Protocol</th>
-                        <th>Service</th>
-                        <th>Bytes (Src/Dst)</th>
-                        <th>Flag</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Populated by JS -->
-                </tbody>
-            </table>
-        </section>
-
-        <p id="statusMsg" style="text-align: center; margin-top: 2rem; color: #888;"></p>
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMsg">Action Successful</span>
     </div>
 
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <!-- Background Effects -->
+    <div class="bg-gradient"></div>
+    <div class="bg-grid"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-shield-alt"></i>
+            <span>NIDS</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#" class="active">Home</a></li>
+            <li><a href="#dashboard">Analyze</a></li>
+            <li><a href="#dashboard">Dashboard</a></li>
+            <li><a href="#">About</a></li>
+        </ul>
+        <div class="nav-actions">
+            <button class="btn-outline">Login</button>
+        </div>
+        <div class="mobile-menu-btn">
+            <i class="fas fa-bars"></i>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="hero-content">
+            <div class="hero-text">
+                <span class="badge">v2.0 Stable Release</span>
+                <h1>Network Interruption <br><span class="highlight">Detection System</span></h1>
+                <p class="subtitle">AI-Powered Threat Monitoring. Secure your infrastructure with real-time anomaly
+                    detection using advanced Random Forest algorithms.</p>
+                <div class="hero-btns">
+                    <a href="#dashboard" class="btn-primary glow-effect">Start Analysis <i
+                            class="fas fa-arrow-right"></i></a>
+                    <a href="/download_sample" class="btn-text">Download Sample Data</a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="shield-scanner">
+                    <i class="fas fa-network-wired"></i>
+                    <div class="scan-line"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Dashboard -->
+    <main id="dashboard" class="dashboard-container">
+        <div class="section-header">
+            <h2>Security Dashboard</h2>
+            <p>Real-time Traffic Analysis</p>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="control-panel glass-card">
+            <div class="upload-area" id="dropArea">
+                <input type="file" id="fileInput" accept=".csv" class="file-input-hidden">
+                <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <div class="upload-text">
+                    <h3>Upload Network Data</h3>
+                    <p id="fileName">Drag & drop CSV or click to browse</p>
+                </div>
+            </div>
+            <div class="action-area">
+                <button id="analyzeBtn" class="btn-large pulse-animation">
+                    <i class="fas fa-radar"></i> Analyze Traffic
+                </button>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="stats-grid">
+            <div class="stat-card glass-card">
+                <div class="stat-icon icon-blue">
+                    <i class="fas fa-server"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Total Traffic</h3>
+                    <p id="totalPackets" class="counter">0</p>
+                </div>
+            </div>
+
+            <div class="stat-card glass-card">
+                <div class="stat-icon icon-green">
+                    <i class="fas fa-shield-check"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Normal Packets</h3>
+                    <p id="normalCount" class="counter">0</p>
+                </div>
+            </div>
+
+            <div class="stat-card glass-card border-danger">
+                <div class="stat-icon icon-red">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-info">
+                    <h3>Attacks Detected</h3>
+                    <p id="attackCount" class="counter">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graph Section -->
+        <div class="graph-section glass-card">
+            <div class="card-header">
+                <h3><i class="fas fa-chart-area"></i> Threats Over Time</h3>
+                <div class="actions">
+                    <span class="live-dot"></span> Live Monitoring
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="threatChart"></canvas>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <p>&copy; 2026 Cybersecurity Lab. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}?v=3.0"></script>
 </body>
 
 </html>

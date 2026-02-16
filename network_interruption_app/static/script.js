@@ -1,90 +1,167 @@
-document.getElementById('analyzeBtn').addEventListener('click', analyzeNetwork);
+document.getElementById('analyzeBtn').addEventListener('click', runAnalysis);
 const fileInput = document.getElementById('fileInput');
-fileInput.addEventListener('change', () => {
-    const fileName = fileInput.files.length > 0 ? fileInput.files[0].name : 'Choose CSV File';
-    document.querySelector('.custom-file-upload span').textContent = fileName;
+const dropArea = document.getElementById('dropArea');
+
+// Handle File Input and Drag & Drop
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(name => {
+    dropArea.addEventListener(name, e => { e.preventDefault(); e.stopPropagation(); }, false);
 });
 
-function analyzeNetwork() {
-    const file = fileInput.files[0];
+dropArea.addEventListener('drop', e => {
+    const files = e.dataTransfer.files;
+    fileInput.files = files;
+    updateFileName(files[0].name);
+});
 
-    // Status update
-    const statusMsg = document.getElementById('statusMsg');
-    statusMsg.innerHTML = '<span class="text-blue">Analyzing Network Traffic... (Please Wait)</span>';
-    statusMsg.style.display = 'block';
+fileInput.addEventListener('change', () => {
+    if (fileInput.files.length > 0) updateFileName(fileInput.files[0].name);
+});
+
+function updateFileName(name) {
+    document.getElementById('fileName').textContent = name;
+    document.getElementById('fileName').style.color = '#00d4ff';
+}
+
+// ---------------------------------------------------------
+// CORE ANALYSIS LOGIC
+// ---------------------------------------------------------
+function runAnalysis() {
+    const file = fileInput.files[0];
+    const analyzeBtn = document.getElementById('analyzeBtn');
+
+    analyzeBtn.disabled = true;
+    analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
 
     const formData = new FormData();
-    if (file) {
-        formData.append('file', file);
-    }
-    // If no file, we send empty formData. Backend will pick up default CSV.
+    if (file) formData.append('file', file);
 
-    fetch('/predict', {
-        method: 'POST',
-        body: formData
-    })
+    fetch('/predict', { method: 'POST', body: formData })
         .then(res => res.json())
         .then(data => {
+            analyzeBtn.disabled = false;
+            analyzeBtn.innerHTML = '<i class="fas fa-radar"></i> Analyze Traffic';
+
             if (data.error) {
-                statusMsg.innerHTML = `<span class="text-red">Error: ${data.error}</span>`;
+                showToast(data.error, 'error');
                 return;
             }
 
-            // Hide status
-            statusMsg.style.display = 'none';
+            showToast('System Scan Complete', 'success');
 
-            // Show sections
-            document.getElementById('statsSection').classList.remove('hidden');
-            document.getElementById('tableSection').classList.remove('hidden');
+            // Update Numbers
+            animateValue("totalPackets", 0, data.total_packets, 1200);
+            animateValue("normalCount", 0, data.normal_count, 1200);
+            animateValue("attackCount", 0, data.attack_count, 1200);
 
-            // Update Stats
-            animateValue("totalPackets", 0, data.total_packets, 1000);
-            animateValue("normalCount", 0, data.normal_count, 1000);
-            animateValue("attackCount", 0, data.attack_count, 1000);
+            // Force Render Graph
+            if (data.trends) {
+                console.log("Rendering graph with data:", data.trends);
+                renderThreatGraph(data.trends);
+            }
 
-            // Render Table
-            renderAttackTable(data.detected_incidents);
+            // Smooth Scroll to Results
+            setTimeout(() => {
+                document.querySelector('.stats-grid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
         })
         .catch(err => {
-            statusMsg.innerHTML = `<span class="text-red">Server Error. Check console.</span>`;
-            console.error(err);
+            analyzeBtn.disabled = false;
+            analyzeBtn.innerHTML = '<i class="fas fa-radar"></i> Analyze Traffic';
+            showToast('Connection Refused by Server', 'error');
         });
 }
 
-function renderAttackTable(attacks) {
-    const tableBody = document.querySelector('#attacksTable tbody');
-    tableBody.innerHTML = '';
+// ---------------------------------------------------------
+// REFINED GRAPH RENDERING
+// ---------------------------------------------------------
+let myChartInstance = null;
 
-    if (attacks.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#888;">No attacks detected.</td></tr>';
-        return;
-    }
+function renderThreatGraph(trends) {
+    const canvas = document.getElementById('threatChart');
+    if (!canvas) return;
 
-    attacks.forEach(attack => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>#${attack.id}</td>
-            <td class="text-blue">${attack.protocol_type}</td>
-            <td>${attack.service}</td>
-            <td>${attack.src_bytes} / ${attack.dst_bytes}</td>
-            <td class="risk-high">${attack.flag}</td>
-            <td class="risk-high">INTERRUPTED</td>
-        `;
-        tableBody.appendChild(row);
+    const ctx = canvas.getContext('2d');
+    if (myChartInstance) myChartInstance.destroy();
+
+    // Create Luxury Gradients
+    const redGrad = ctx.createLinearGradient(0, 0, 0, 400);
+    redGrad.addColorStop(0, 'rgba(239, 68, 68, 0.6)');
+    redGrad.addColorStop(1, 'rgba(239, 68, 68, 0.05)');
+
+    const greenGrad = ctx.createLinearGradient(0, 0, 0, 400);
+    greenGrad.addColorStop(0, 'rgba(16, 185, 129, 0.6)');
+    greenGrad.addColorStop(1, 'rgba(16, 185, 129, 0.05)');
+
+    myChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: trends.labels,
+            datasets: [
+                {
+                    label: 'Attacks Detected',
+                    data: trends.attack,
+                    borderColor: '#ef4444',
+                    backgroundColor: redGrad,
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#fff'
+                },
+                {
+                    label: 'Safe Traffic',
+                    data: trends.normal,
+                    borderColor: '#10b981',
+                    backgroundColor: greenGrad,
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#fff'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#94a3b8', font: { family: 'Poppins', size: 12 } } }
+            },
+            scales: {
+                x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+                y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' }, beginAtZero: true }
+            },
+            animation: { duration: 1500, easing: 'easeOutQuart' }
+        }
     });
 }
 
-// Simple number counting animation
+// ---------------------------------------------------------
+// UTILS
+// ---------------------------------------------------------
 function animateValue(id, start, end, duration) {
     const obj = document.getElementById(id);
+    if (!obj) return;
     let startTimestamp = null;
     const step = (timestamp) => {
         if (!startTimestamp) startTimestamp = timestamp;
         const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-        obj.innerHTML = Math.floor(progress * (end - start) + start);
-        if (progress < 1) {
-            window.requestAnimationFrame(step);
-        }
+        obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
+        if (progress < 1) window.requestAnimationFrame(step);
     };
     window.requestAnimationFrame(step);
+}
+
+function showToast(msg, type) {
+    const toast = document.getElementById('toast');
+    const msgSpan = document.getElementById('toastMsg');
+    toast.className = `toast ${type}`;
+    msgSpan.textContent = msg;
+
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-20px)';
+    }, 3000);
 }

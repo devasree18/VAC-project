@@ -70,21 +70,34 @@ def analyze_network():
         # Predict
         preds = model.predict(X)
         
-        # Identify attacks
-        attack_indices = np.where(preds == 1)[0]
-        # Get first 100 attacks for the log
-        attacks_df = df.iloc[attack_indices].head(100).copy() 
+        # --- 1. Generate Trend Data for Graph ---
+        num_bins = 30
+        bin_size = max(1, len(preds) // num_bins)
         
-        # Add a simulated timestamp for display
+        trends = {'labels': [], 'normal': [], 'attack': []}
+        
+        for i in range(num_bins):
+            start = i * bin_size
+            end = (i + 1) * bin_size if i < num_bins - 1 else len(preds)
+            segment = preds[start:end]
+            
+            trends['normal'].append(int(np.sum(segment == 0)))
+            trends['attack'].append(int(np.sum(segment == 1)))
+            trends['labels'].append(f"{i}:00") # Simulated timeline
+
+        # --- 2. Identify Attacks for Log ---
+        attack_indices = np.where(preds == 1)[0]
+        # Get first 50 attacks for the log
+        attacks_df = df.iloc[attack_indices].head(50).copy() 
         attacks_df['id'] = attacks_df.index
         
-        # Convert to list of dicts
         detected_incidents = attacks_df[['id', 'protocol_type', 'service', 'src_bytes', 'dst_bytes', 'flag']].to_dict(orient='records')
 
         return jsonify({
             'total_packets': len(preds),
             'normal_count': int(np.sum(preds == 0)),
             'attack_count': int(np.sum(preds == 1)),
+            'trends': trends,
             'detected_incidents': detected_incidents
         })
 
